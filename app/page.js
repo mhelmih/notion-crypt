@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import rsa from 'js-crypto-rsa'
+import forge from "node-forge";
 
 export default function Home() {
   const [password, setPassword] = useState("");
@@ -15,9 +15,18 @@ export default function Home() {
   const [isEncrypt, setIsEncrypt] = useState(true);
   const [n, setN] = useState("");
 
+  const rsa = forge.pki.rsa;
+
   // enter password as the key
   const generateKeys = () => {
-    rsa.generateKey(2048).then((keypair) => {
+    // rsa.generateKey(2048).then((keypair) => {
+    //   setPublicKey(keypair.publicKey);
+    //   setPrivateKey(keypair.privateKey);
+    //   setN(keypair.publicKey.n.toString(16));
+    //   setKey(keypair.publicKey.e.toString(16));
+    //   setIsGenerated(true);
+    // });
+    rsa.generateKeyPair({ bits: 2048, workers: -1 }, function (err, keypair) {
       setPublicKey(keypair.publicKey);
       setPrivateKey(keypair.privateKey);
       setN(keypair.publicKey.n.toString(16));
@@ -27,33 +36,40 @@ export default function Home() {
   };
 
   const process = () => {
-    // if (isEncrypt) {
-    //   // convert key from hex to decimal
-    //   const e = BigInt("0x" + key);
-    //   const n = BigInt("0x" + n);
-    //   publicKey.e = e;
-    //   publicKey.n = n;
+    if (isEncrypt) {
+      // convert key from hex to decimal
+      // const e = BigInt("0x" + key);
+      // const n = BigInt("0x" + n);
+      // publicKey.e = e;
+      // publicKey.n = n;
 
-    //   encrypt();
-    // } else {
-    //   // convert key from hex to decimal
-    //   const d = BigInt("0x" + key);
-    //   const n = BigInt("0x" + n);
-    //   privateKey.d = d;
-    //   privateKey.n = n;
+      encrypt();
+    } else {
+      // convert key from hex to decimal
+      // const d = BigInt("0x" + key);
+      // const n = BigInt("0x" + n);
+      // privateKey.d = d;
+      // privateKey.n = n;
 
-    //   decrypt();
-    // }
+      decrypt();
+    }
   };
 
   const encrypt = () => {
-    const encrypted = publicKey.encrypt(text);
-    setResult(encrypted);
+    // convert text from string to bytes
+    const bytes = forge.util.encodeUtf8(text);
+    // encrypt bytes
+    const encrypted = publicKey.encrypt(bytes);
+    // convert encrypted bytes to hex
+    const hex = forge.util.bytesToHex(encrypted);
+    setResult(hex);
   };
 
   const decrypt = () => {
-    const decrypted = privateKey.decrypt(text);
-    setResult(decrypted);
+    const bytes = forge.util.hexToBytes(text);
+    const decrypted = privateKey.decrypt(bytes);
+    const utf8 = forge.util.decodeUtf8(decrypted);
+    setResult(utf8);
   };
 
   return (
@@ -147,7 +163,7 @@ export default function Home() {
       </div>
 
       <h1 className="pt-6 text-xl font-medium">Result:</h1>
-      <div>{result}</div>
+      <div className="break-words">{result.toString(16)}</div>
     </main>
   );
 }
